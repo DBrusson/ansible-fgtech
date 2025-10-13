@@ -1,43 +1,37 @@
 ---
-- name: 🧪 VÉRIFICATION DE L'EE ANSIBLE 2.9.13 / PYTHON 2.7.5
+- name: 🧪 VÉRIFICATION DE L'EE ANSIBLE (LOCALHOST)
   hosts: localhost
   connection: local
-  gather_facts: false # Désactiver la collecte de faits pour éviter l'erreur initiale
+  gather_facts: false
 
   tasks:
-    - name: 1. Définir l'interpréteur Python pour localhost (EE)
-      # Bien que connection: local soit utilisé, ceci peut aider à stabiliser
-      # l'environnement pour les sous-processus.
-      ansible.builtin.set_fact:
-        ansible_python_interpreter: /usr/bin/python
-
-    - name: 2. Vérifier la version d'Ansible (doit être 2.9.13)
-      # Utiliser la commande 'ansible --version' exécutée localement.
-      ansible.builtin.command: ansible --version
+    - name: 1. Vérifier la version d'Ansible (doit être 2.9.13)
+      # Utilisation du binaire ansible-playbook pour vérifier la version installée dans l'EE
+      ansible.builtin.command: ansible-playbook --version
       register: ansible_version_check
       changed_when: false
 
-    - name: Afficher et valider la version d'Ansible
+    - name: Afficher la version d'Ansible
       ansible.builtin.debug:
-        msg: "✅ Version d'Ansible: {{ ansible_version_check.stdout_lines[0] | regex_replace('.*([0-9]+\\.[0-9]+\\.[0-9]+).*', '\\1') }}"
-      # Vérification optionnelle pour s'assurer que c'est 2.9.13
-      # failed_when: "'2.9.13' not in ansible_version_check.stdout"
+        msg: "✅ Version d'Ansible trouvée: {{ ansible_version_check.stdout_lines[0] | regex_replace('.*([0-9]+\\.[0-9]+\\.[0-9]+).*', '\\1') }}"
 
-    - name: 3. Vérifier la version de Python (doit être 2.7.5)
-      # Utiliser la commande 'python -V' exécutée localement.
-      ansible.builtin.command: python -V
+    - name: 2. Vérifier l'interpréteur Python de l'EE (pour confirmation 2.7.5)
+      # Utiliser 'which python' pour trouver le chemin, puis vérifier la version.
+      ansible.builtin.command: which python
+      register: python_path_check
+      changed_when: false
+
+    - name: 3. Afficher et valider la version de Python
+      ansible.builtin.command: "{{ python_path_check.stdout | trim }} -V"
       register: python_version_check
       changed_when: false
 
-    - name: Afficher et valider la version de Python
-      # Python -V affiche sur stderr
+    - name: Afficher la version de Python
       ansible.builtin.debug:
-        msg: "✅ Version de Python dans l'EE: {{ python_version_check.stderr | trim }}"
-      # Vérification optionnelle pour s'assurer que c'est 2.7
-      # failed_when: "'Python 2.7' not in python_version_check.stderr"
+        msg: "✅ Version de Python de l'EE: {{ python_version_check.stderr | trim }}"
 
-    - name: 4. Tester un module intégré d'Ansible 2.9 (file)
-      # Utilise le module 'file' sur le conteneur EE.
+    - name: 4. Test d'un module basique (file) dans l'EE
+      # Cette tâche DOIT cibler localhost car c'est un test de la capacité de l'EE.
       ansible.builtin.file:
         path: /tmp/ee_test_ansible_29.txt
         state: touch
@@ -47,21 +41,31 @@
 
     - name: Confirmer le succès du module 'file'
       ansible.builtin.debug:
-        msg: "✅ Module 'file' (Ansible 2.9) testé avec succès. Changement: {{ file_result.changed }}"
+        msg: "✅ Module 'file' (Ansible 2.9) testé avec succès dans l'EE."
 
-# ---
-- name: 🚀 TEST DE DÉPLOIEMENT SUR UNE CIBLE CENTOS 7
-  hosts: ee_test # Remplacer par le groupe/hôte cible dans votre inventaire AWX
-  gather_facts: false
+---
+## 🚀 TEST DE CONNEXION ET DE DÉPLOIEMENT SUR LA CIBLE CENTOS 7
+
+- name: Exécuter des tâches sur les hôtes cibles distants
+  hosts: vos_serveurs_centos7 # Remplacer par le groupe/hôte cible
+  gather_facts: false # Collecte des faits désactivée pour plus de rapidité
 
   tasks:
     - name: 5. Assurer l'utilisation de Python 2.7 sur l'hôte cible
-      # Le système CentOS 7 utilise Python 2.7 par défaut, spécifions-le explicitement.
+      # Configure l'interpréteur pour le serveur CentOS 7 distant
       ansible.builtin.set_fact:
         ansible_python_interpreter: /usr/bin/python
 
-    - name: 6. Tester un module spécifique à CentOS 7 (yum)
-      # 'yum' est le gestionnaire de paquets standard sous CentOS 7.
+    - name: 6. TEST CRITIQUE : Utiliser 'ping' pour vérifier la connexion SSH/Python
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: Afficher le résultat du ping
+      ansible.builtin.debug:
+        msg: "✅ Connexion à l'hôte cible réussie (Ping: {{ ping_result.ping }})"
+
+    - name: 7. Tester un module spécifique à CentOS 7 (yum)
+      # L'absence de delegate_to garantit que cette tâche s'exécute sur l'hôte ciblé.
       ansible.builtin.yum:
         name: wget
         state: present
@@ -69,4 +73,4 @@
 
     - name: Confirmer le succès du module 'yum'
       ansible.builtin.debug:
-        msg: "✅ Module 'yum' (Ansible 2.9) testé avec succès sur l'hôte cible. Changement: {{ yum_result.changed }}"
+        msg: "✅ Module 'yum' (Ansible 2.9) testé sur l'hôte distant. Changement: {{ yum_result.changed }}"

@@ -7,8 +7,8 @@
   tasks:
     - name: Creating user titi with admin access
       user:
-        name: essai
+        name: titi
         password: "{{ password | password_hash('sha512') }}"
         groups: wheel
         state: present
-
+        update_password: on_create

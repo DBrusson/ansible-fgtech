@@ -1,0 +1,4 @@
+- name: Include OS-specific variables (Almalinux)
+  include_vars:
+    file: "{{ ansible_distribution }}-{{ ansible_distribution_version.split('.')[0] }}.yml"
+  when: ansible_distribution == "AlmaLinux"

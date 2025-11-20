@@ -3,8 +3,8 @@
   hosts: all
   become: true
   vars:
-      text_message: " see {{ hostvars['target1']['ansible_host'] }}"
-      my_name: "Herve"
+      text_message: "{{ inventory_hostname }}"
+      my_name: "David"
   tasks:
     - name: copy template file
       template:
@@ -12,7 +12,3 @@
         dest: /etc/motd
   tags:
     - motd_config
-
-
-
-

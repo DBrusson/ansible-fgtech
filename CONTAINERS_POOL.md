@@ -97,6 +97,13 @@ export VERSION='7'
 export KEY_CONTENT=$(cat ~/.ssh/id_rsa.pub)
 docker build --build-arg SSH_PUBLIC_KEY="${KEY_CONTENT}" -t docker-systemd:${DISTR}-${VERSION} -f ${DISTR}/${VERSION}.Dockerfile .
 
+export DISTR='alpine'
+export VERSION='3.18'
+docker build --build-arg SSH_PUBLIC_KEY="${KEY_CONTENT}" -t docker-systemd:${DISTR}-${VERSION} -f ${DISTR}/${VERSION}.Dockerfile .
+
+export DISTR='ubuntu'
+export VERSION='24.04'
+docker build --build-arg SSH_PUBLIC_KEY="${KEY_CONTENT}" -t docker-systemd:${DISTR}-${VERSION} -f ${DISTR}/${VERSION}.Dockerfile .
 
 export DISTR='almalinux'
 export VERSION='10'
@@ -269,3 +276,4 @@ pip3 install --upgrade pip
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
